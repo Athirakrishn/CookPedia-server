@@ -10,3 +10,27 @@ exports.getAllRecipesController = async (req,res)=>{
         res.status(500).json(error)
     }
 }
+
+//view recipe controller
+exports.viewRecipesController = async (req,res)=>{
+    console.log("Inside viewRecipesController");
+    const {id}=req.params
+    try{
+        const viewDetails = await recipes.findById({_id:id})
+        res.status(200).json(viewDetails)
+    }catch(error){
+        res.status(500).json(error)
+    }
+}
+
+exports.getRelatedRecipesController = async (req,res)=>{
+    console.log("Inside getRelatedRecipesController");
+    const cuisine =req.query.cuisine
+    try{a
+        
+        const allRecipeDetails = await recipes.findById({cuisine})
+        res.status(200).json(allRecipeDetails)
+    }catch(error){
+        res.status(500).json(error)
+    }
+}
