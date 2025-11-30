@@ -1,66 +1,78 @@
-const jwt = require('jsonwebtoken');
-const users=require('../models/userModel')
+const users = require('../models/userModel')
 const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken')
 
-// register
-exports.registerController=async (req,res)=>{
-  console.log("inside register controller");
-  const {username,email,password}=req.body
-try{
-  const existingUser = await users.findOne({email})
-  if(existingUser){
-    res.status(409).json("already exist")
-  }else{
-    const encryptPassword = await bcrypt.hash(password,10)
-    const newUser= new users({
-      username,email,password:encryptPassword,profile:""
-    })
-    await newUser.save()
-      res.status(200).json(newUser)
-
-  }
-
-}catch(err){
-  res.status(500).json(err)
-}
-  
+//register
+exports.registerController = async (req,res)=>{
+    console.log("Inside registerController");
+    const {username,email,password} = req.body
+    try{
+        const existingUser = await users.findOne({email})
+        if(existingUser){
+            res.status(406).json("User Already exists... Please Login!!!")
+        }else{
+            const encryptPassword =  await bcrypt.hash(password,10)
+            const newUser = new users({
+                username,email,password:encryptPassword,profile:""
+            })
+            await newUser.save()
+            res.status(200).json(newUser)
+        }
+    }catch(err){
+        res.status(500).json(err)
+    }
 }
 
 //login
-exports.loginController=async(req,res)=>{
-console.log("inside loginController");
- const {email,password}=req.body
-   
-try{
-const existingUser = await users.findOne({email})
-if(existingUser){
-  if(existingUser.role=="user"){
-   let isUserLoggedin = existingUser.role=="user"?await bcrypt.compare(password,existingUser.password)
-   : password == existingUser.password
-   if(isUserLoggedin){
-    const token = jwt.sign({ email, role: existingUser.role }, process.env.JWTSECRET)
-      res.status(200).json({user:existingUser,token})
-
-   }
-    // const token = jwt.sign({email,role:existingUser.role},process.env.JWTSECRET)
-    
-  }else{
-  res.status(404).json("invalid email/password")
-
-  }
-
-}else{
- res.status(404).json("invalid email...... please register to access our app")
- 
-}
-}catch(err){
-res.status(500).json(err)
-}
+exports.loginController = async (req,res)=>{
+    console.log("Inside loginController");
+     const {email,password} = req.body
+     try{
+        const existingUser = await users.findOne({email})
+        if(existingUser){
+          let isUserLoggedin = existingUser.role=="user" ? await bcrypt.compare(password,existingUser.password) : password==existingUser.password
+          if(isUserLoggedin){
+            const token = jwt.sign({email,role:existingUser.role},process.env.JWTSECRET)
+            res.status(200).json({user:existingUser,token})
+          }else{
+            res.status(404).json("Invalid Email/Password...")
+          }
+        }else{
+            res.status(404).json("Invalid Email... Please Register to access Cookpedia.")
+        }
+     }catch(err){
+        // console.log(err);
+        res.status(500).json(err)
+     }
 }
 
-
-
-
-
-
-
+//update user
+exports.updateUserProfileController = async (req,res)=>{
+    console.log("Inside updateUserProfileController");
+    const {username,password,profile} = req.body
+    // console.log(profile)
+    const {id} = req.params
+    try{
+        const existingUser = await users.findById({_id:id})
+        existingUser.username = username
+        existingUser.profile = profile
+        if(password!=""){
+            const encryptPassword =  await bcrypt.hash(password,10)
+            existingUser.password = encryptPassword
+        }
+       await existingUser.save()
+        res.status(200).json(existingUser)
+    }catch(err){
+        res.status(500).json(err)
+    }
+}
+//get all users
+exports.getAllUsersController = async (req,res)=>{
+    console.log("Inside getAllUsersController");
+    try{
+        const allUsers = await users.find({role:{$ne:"admin"}})
+        res.status(200).json(allUsers)
+    }catch(err){
+        res.status(500).json(err)
+    }
+}
